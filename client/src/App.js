@@ -13,7 +13,7 @@ function App() {
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState("");
 
-  // Load existing expenses from backend
+  // Load existing expenses
   const fetchExpenses = async () => {
     try {
       setLoading(true);
@@ -31,7 +31,7 @@ function App() {
     fetchExpenses();
   }, []);
 
-  // Handle add expense
+  // Add expense
   const handleAddExpense = async (e) => {
     e.preventDefault();
 
@@ -51,18 +51,32 @@ function App() {
       setExpenses(res.data.expenses || []);
       setTotalAmount(res.data.totalAmount || 0);
 
-      // Clear the form
       setDescription("");
       setAmount("");
       setDate("");
       setCategory("Food");
     } catch (err) {
       console.error("Error adding expense", err);
-      alert("Failed to add expense. Please try again.");
+      alert("Failed to add expense");
     }
   };
 
-  // Format date nicely
+  // ✅ DELETE expense
+  const handleDelete = async (id) => {
+    try {
+      const res = await axios.delete(
+        `http://localhost:5000/api/expenses/${id}`
+      );
+
+      setExpenses(res.data.expenses || []);
+      setTotalAmount(res.data.totalAmount || 0);
+    } catch (err) {
+      console.error("Delete failed", err);
+      alert("Failed to delete expense");
+    }
+  };
+
+  // Format date
   const formatDate = (value) => {
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return value;
@@ -84,40 +98,26 @@ function App() {
               Track your daily spends and stay in control of your money.
             </p>
           </div>
-          <span className="status-pill">
-            ● Live demo &nbsp;|&nbsp; Localhost 5000
-          </span>
+          <span className="status-pill">● Live demo</span>
         </header>
 
         {/* SUMMARY */}
         <section className="summary-card">
-          <p className="summary-label">Total spent this session</p>
+          <p className="summary-label">Total spent</p>
           <p className="summary-amount">
             ₹{totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
           </p>
-          <p className="summary-note">
-            {expenses.length === 0
-              ? "No expenses added yet. Start by logging your first spend below."
-              : `You have logged ${expenses.length} expense${
-                  expenses.length > 1 ? "s" : ""
-                } so far.`}
-          </p>
         </section>
 
-        {/* ADD EXPENSE FORM */}
+        {/* ADD EXPENSE */}
         <section className="add-expense-card">
-          <h2 className="add-expense-title">Add a new expense</h2>
-          <p className="add-expense-sub">
-            Enter what you spent, choose a category, and we will keep it nicely
-            organized for you.
-          </p>
+          <h2>Add a new expense</h2>
 
           <form className="expense-form" onSubmit={handleAddExpense}>
             <label>
               Description
               <input
                 type="text"
-                placeholder="Coffee at Cafe, Uber ride..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
@@ -129,21 +129,18 @@ function App() {
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
               >
-                <option value="Food">Food</option>
-                <option value="Travel">Travel</option>
-                <option value="Shopping">Shopping</option>
-                <option value="Bills">Bills</option>
-                <option value="Other">Other</option>
+                <option>Food</option>
+                <option>Travel</option>
+                <option>Shopping</option>
+                <option>Bills</option>
+                <option>Other</option>
               </select>
             </label>
 
             <label>
-              Amount (₹)
+              Amount
               <input
                 type="number"
-                min="0"
-                step="0.01"
-                placeholder="0.00"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
               />
@@ -158,8 +155,6 @@ function App() {
               />
             </label>
 
-            {/* Empty grid cell to align button nicely */}
-            <div></div>
             <button type="submit" className="primary-btn">
               + Add expense
             </button>
@@ -168,21 +163,10 @@ function App() {
 
         {/* TABLE */}
         <section className="table-section">
-          <div className="table-header">
-            <h2>Recent expenses</h2>
-            <span className="badge">
-              {expenses.length === 0
-                ? "No entries yet"
-                : `${expenses.length} item${expenses.length > 1 ? "s" : ""}`}
-            </span>
-          </div>
-
           {loading ? (
-            <p className="empty-state">Loading your expenses…</p>
+            <p>Loading…</p>
           ) : expenses.length === 0 ? (
-            <p className="empty-state">
-              Nothing to show yet. Add your first expense above.
-            </p>
+            <p>No expenses yet.</p>
           ) : (
             <table>
               <thead>
@@ -190,7 +174,8 @@ function App() {
                   <th>Date</th>
                   <th>Description</th>
                   <th>Category</th>
-                  <th className="amount-col">Amount (₹)</th>
+                  <th>Amount</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -199,22 +184,20 @@ function App() {
                     <td>{formatDate(exp.date)}</td>
                     <td>{exp.description}</td>
                     <td>{exp.category}</td>
-                    <td className="amount-col">
-                      ₹
-                      {exp.amount.toLocaleString("en-IN", {
-                        minimumFractionDigits: 2,
-                      })}
+                    <td>₹{exp.amount.toFixed(2)}</td>
+                    <td>
+                      <button
+                        onClick={() => handleDelete(exp.id)}
+                        style={{ color: "red" }}
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           )}
-
-          <p className="footer-note">
-            Data is stored in memory on the backend (demo mode). Refreshing the
-            page will reset the session.
-          </p>
         </section>
       </div>
     </div>
